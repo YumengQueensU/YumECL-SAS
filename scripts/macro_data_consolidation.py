@@ -9,12 +9,19 @@ import numpy as np
 from datetime import datetime
 import warnings
 warnings.filterwarnings('ignore')
+import os
 
 class MacroDataProcessor:
     """宏观经济数据处理器"""
     
-    def __init__(self, data_path='data/sample/macro_data/'):
-        self.data_path = data_path
+    def __init__(self, data_path=None):
+        if data_path is None:
+            # 获取当前脚本所在目录的上级目录，然后构建绝对路径
+            current_dir = os.path.dirname(os.path.abspath(__file__))
+            parent_dir = os.path.dirname(current_dir)
+            self.data_path = os.path.join(parent_dir, 'data', 'sample', 'macro_data') + os.sep
+        else:
+            self.data_path = data_path
         self.start_date = '2020-01-01'
         self.end_date = '2024-12-31'
         
@@ -22,7 +29,7 @@ class MacroDataProcessor:
         """加载CPI数据"""
         print("Loading CPI data...")
         df = pd.read_csv(f'{self.data_path}CPI_Monthly-1810000401-eng.csv', 
-                        skiprows=7, encoding='utf-8')
+                        skiprows=9, encoding='utf-8')
         
         # 提取All-items CPI
         cpi_data = df[df['Products and product groups 3 4'] == 'All-items'].iloc[:, 1:].T
@@ -40,7 +47,7 @@ class MacroDataProcessor:
         """加载劳动力市场数据"""
         print("Loading labour force data...")
         df = pd.read_csv(f'{self.data_path}Labour_Force-1410028701-eng.csv', 
-                        skiprows=4, encoding='utf-8')
+                        skiprows=12, encoding='utf-8')
         
         # 提取失业率和就业率
         labour_data = pd.DataFrame()
@@ -65,12 +72,15 @@ class MacroDataProcessor:
         """加载GDP数据（年度转月度）"""
         print("Loading GDP data...")
         df = pd.read_csv(f'{self.data_path}GDP-3610040201-eng.csv', 
-                        skiprows=7, encoding='utf-8')
+                        skiprows=10, encoding='utf-8')
         
         # 提取加拿大总GDP（安大略省也可选）
         gdp_data = df[df['Geography'] == 'Ontario'][['2020', '2021', '2022', '2023', '2024']].T
         gdp_data.columns = ['GDP_Ontario']
         gdp_data.index = pd.to_datetime(gdp_data.index.astype(str) + '-01-01')
+        
+        # 将GDP数据转换为数值类型（移除逗号并转换为float）
+        gdp_data['GDP_Ontario'] = gdp_data['GDP_Ontario'].astype(str).str.replace(',', '').astype(float)
         
         # 年度数据插值到月度
         gdp_monthly = gdp_data.resample('M').interpolate(method='linear')
@@ -86,7 +96,7 @@ class MacroDataProcessor:
         
         # 政策利率（日度）
         policy_df = pd.read_csv(f'{self.data_path}Policy_Interest_Rate-V39079-sd-2020-01-01-ed-2024-12-31.csv', 
-                               skiprows=5)
+                               skiprows=8)
         policy_df['date'] = pd.to_datetime(policy_df['date'])
         policy_df = policy_df.set_index('date')
         policy_monthly = policy_df.resample('M').mean()
@@ -94,7 +104,7 @@ class MacroDataProcessor:
         
         # 基准利率（周度）
         prime_df = pd.read_csv(f'{self.data_path}Prime_Rate-V80691311-sd-2020-01-01-ed-2024-12-31.csv', 
-                              skiprows=5)
+                              skiprows=8)
         prime_df['date'] = pd.to_datetime(prime_df['date'])
         prime_df = prime_df.set_index('date')
         prime_monthly = prime_df.resample('M').mean()
@@ -102,7 +112,7 @@ class MacroDataProcessor:
         
         # 5年期抵押贷款利率（周度）
         mortgage_df = pd.read_csv(f'{self.data_path}5Year_Conventional_Mortgage-V80691335-sd-2020-01-01-ed-2024-12-31.csv', 
-                                 skiprows=5)
+                                 skiprows=8)
         mortgage_df['date'] = pd.to_datetime(mortgage_df['date'])
         mortgage_df = mortgage_df.set_index('date')
         mortgage_monthly = mortgage_df.resample('M').mean()
@@ -121,7 +131,7 @@ class MacroDataProcessor:
         """加载汇率数据"""
         print("Loading FX data...")
         df = pd.read_csv(f'{self.data_path}FX_USD_CAD-sd-2020-01-01-ed-2024-12-31.csv', 
-                        skiprows=5)
+                        skiprows=8)
         df['date'] = pd.to_datetime(df['date'])
         df = df.set_index('date')
         
@@ -271,7 +281,12 @@ class MacroDataProcessor:
         
         return df
     
-    def save_data(self, macro_data, scenarios, output_path='data/output/'):
+    def save_data(self, macro_data, scenarios, output_path=None):
+        if output_path is None:
+            # 获取当前脚本所在目录的上级目录，然后构建绝对路径
+            current_dir = os.path.dirname(os.path.abspath(__file__))
+            parent_dir = os.path.dirname(current_dir)
+            output_path = os.path.join(parent_dir, 'data', 'sample') + os.sep
         """保存处理后的数据"""
         print("Saving processed data...")
         
@@ -342,13 +357,13 @@ class MacroDataProcessor:
 def main():
     """主函数"""
     # 初始化处理器
-    processor = MacroDataProcessor(data_path='data/sample/macro_data/')
+    processor = MacroDataProcessor()
     
     # 整合数据
     macro_data, scenarios = processor.consolidate_all_data()
     
     # 保存结果
-    processor.save_data(macro_data, scenarios, output_path='data/output/')
+    processor.save_data(macro_data, scenarios)
     
     # 显示结果摘要
     print("\n" + "="*60)
