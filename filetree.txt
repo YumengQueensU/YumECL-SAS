@@ -1,0 +1,37 @@
+canadian-credit-risk-model/
+│
+├── README.md
+├── LICENSE
+├── .gitignore
+│
+├── /docs/
+│   ├── model_documentation.md       # OSFI E-23格式文档
+│   └── data_dictionary.xlsx         # 数据字典
+│
+├── /sql/
+│   ├── 01_create_schema.sql         # 所有DDL合并
+│   ├── 02_feature_engineering.sql   # 特征工程
+│   └── 03_reporting_queries.sql     # 报告查询
+│
+├── /sas/
+│   ├── 00_setup.sas                 # 环境设置和宏定义
+│   ├── 01_data_preparation.sas      # 数据准备
+│   ├── 02_pd_model.sas             # PD模型（含开发和验证）
+│   ├── 03_lgd_model.sas            # LGD模型
+│   ├── 04_ecl_calculation.sas      # IFRS 9 ECL计算
+│   ├── 05_stress_testing.sas       # 压力测试
+│   ├── 06_model_monitoring.sas     # Champion-Challenger和PSI
+│   └── main_run.sas                # 主执行脚本
+│
+├── /data/
+│   ├── /sample/                    # 样本数据（Git管理）
+│   │   ├── sample_loans_1k.csv    # 1000条示例数据
+│   │   └── macro_data_boc.csv     # 加拿大央行数据
+│   └── /output/                    # 输出结果（Git忽略）
+│       └── .gitkeep
+│
+├── /scripts/
+│   ├── generate_sample_data.py     # 生成模拟数据
+│   └── run_pipeline.sh            # 执行脚本
+│
+└── config.yaml                     # 项目配置

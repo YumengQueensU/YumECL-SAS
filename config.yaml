@@ -1,0 +1,31 @@
+# Project Configuration
+project:
+  name: "Canadian Credit Risk Model"
+  version: "1.0.0"
+  environment: "development"
+
+database:
+  type: "sqlserver"
+  server: "localhost"
+  database: "credit_risk_db"
+  schema: "dbo"
+
+sas:
+  libname: "CREDTRSK"
+  work_path: "/saswork/"
+  output_path: "/output/"
+
+model_params:
+  pd_model:
+    min_sample_size: 1000
+    validation_split: 0.3
+    significance_level: 0.05
+  
+  ecl:
+    stage1_pd_threshold: 0.02
+    stage2_pd_multiplier: 2.0
+    stage3_dpd_days: 90
+
+reporting:
+  frequency: "monthly"
+  recipients: ["21ys3@queensu.ca"]
