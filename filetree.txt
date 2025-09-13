@@ -25,8 +25,9 @@ canadian-credit-risk-model/
 │
 ├── /data/
 │   ├── /sample/                    # 样本数据（Git管理）
-│   │   ├── sample_loans_1k.csv    # 1000条示例数据
-│   │   └── macro_data_boc.csv     # 加拿大央行数据
+│   │   ├── loans_{current_date}.csv    # 贷款记录数据
+│   │   ├── payment_history_{current_date}.csv    # 支付历史数据
+│   │   └── macro_data.csv     # 加拿大宏观数据
 │   └── /output/                    # 输出结果（Git忽略）
 │       └── .gitkeep
 │
