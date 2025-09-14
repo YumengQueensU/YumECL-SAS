@@ -27,7 +27,7 @@ canadian-credit-risk-model/
 │   ├── /sample/                    # 样本数据（Git管理）
 │   │   ├── loans_{current_date}.csv    # 贷款记录数据
 │   │   ├── payment_history_{current_date}.csv    # 支付历史数据
-│   │   └── macro_data.csv     # 加拿大宏观数据
+│   │   └── macro_data_consolidated.csv     # 加拿大宏观数据
 │   └── /output/                    # 输出结果（Git忽略）
 │       └── .gitkeep
 │
