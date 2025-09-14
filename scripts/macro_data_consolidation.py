@@ -10,6 +10,10 @@ from datetime import datetime
 import warnings
 warnings.filterwarnings('ignore')
 import os
+from datetime import datetime, timedelta
+
+# Get the current date to append to the file name
+current_date = datetime.now().strftime("%Y-%m-%d")
 
 class MacroDataProcessor:
     """宏观经济数据处理器"""
@@ -351,12 +355,12 @@ class MacroDataProcessor:
         print("Saving processed data...")
         
         # 保存主数据集
-        macro_data.to_csv(f'{output_path}macro_data_consolidated.csv')
-        print(f"Main dataset saved to: {output_path}macro_data_consolidated.csv")
+        macro_data.to_csv(f'{output_path}macro_data_{current_date}.csv')
+        print(f"Main dataset saved to: {output_path}macro_data_{current_date}.csv")
         
         # 保存压力测试场景
-        scenarios.to_csv(f'{output_path}stress_test_scenarios.csv')
-        print(f"Stress scenarios saved to: {output_path}stress_test_scenarios.csv")
+        scenarios.to_csv(f'{output_path}stress_test_scenarios_{current_date}.csv')
+        print(f"Stress scenarios saved to: {output_path}stress_test_scenarios_{current_date}.csv")
         
         # 保存数据字典
         self._save_data_dictionary(macro_data, output_path)
@@ -377,8 +381,8 @@ class MacroDataProcessor:
             'Std': df.std().values
         })
         
-        data_dict.to_csv(f'{output_path}macro_data_dictionary.csv', index=False)
-        print(f"Data dictionary saved to: {output_path}macro_data_dictionary.csv")
+        data_dict.to_csv(f'{output_path}macro_data_dictionary_{current_date}.csv', index=False)
+        print(f"Data dictionary saved to: {output_path}macro_data_dictionary_{current_date}.csv")
     
     def _generate_data_quality_report(self, df, output_path):
         """生成数据质量报告"""
@@ -409,10 +413,10 @@ class MacroDataProcessor:
                 report.append(f"  Max: {df[var].max():.2f}")
         
         # 保存报告
-        with open(f'{output_path}data_quality_report.txt', 'w') as f:
+        with open(f'{output_path}data_quality_report_{current_date}.txt', 'w') as f:
             f.write('\n'.join(report))
         
-        print(f"Data quality report saved to: {output_path}data_quality_report.txt")
+        print(f"Data quality report saved to: {output_path}data_quality_report_{current_date}.txt")
 
 def main():
     """主函数"""
