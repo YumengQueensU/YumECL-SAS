@@ -68,8 +68,17 @@ class MacroDataProcessor:
         
         return labour_data
     
-    def load_gdp_data(self):
-        """加载GDP数据（年度转月度）"""
+    def load_gdp_data(self, method='forward_fill'):
+        """
+        加载GDP数据（年度转月度）
+        
+        Parameters:
+        method (str): 插值方法
+            - 'forward_fill': 前向填充（推荐）
+            - 'linear': 线性插值
+            - 'cubic': 三次样条插值
+            - 'constant': 常数填充（年度值保持不变）
+        """
         print("Loading GDP data...")
         df = pd.read_csv(f'{self.data_path}GDP-3610040201-eng.csv', 
                         skiprows=10, encoding='utf-8')
@@ -81,14 +90,65 @@ class MacroDataProcessor:
         
         # 将GDP数据转换为数值类型（移除逗号并转换为float）
         gdp_data['GDP_Ontario'] = gdp_data['GDP_Ontario'].astype(str).str.replace(',', '').astype(float)
+        print("原始年度GDP数据:")
+        print(gdp_data)
         
-        # 年度数据插值到月度
-        gdp_monthly = gdp_data.resample('M').interpolate(method='linear')
+        # 创建完整的月度时间范围
+        start_date = pd.to_datetime(self.start_date)
+        end_date = pd.to_datetime(self.end_date)
+        monthly_index = pd.date_range(start=start_date, end=end_date, freq='M')
         
-        # 计算GDP增长率
+        # 根据选择的方法处理年度数据
+        if method == 'forward_fill':
+            # 方法1：前向填充（推荐）
+            # 将年度数据重新索引到月度，然后前向填充
+            gdp_monthly = gdp_data.reindex(monthly_index, method='ffill')
+            print("使用前向填充方法")
+            
+        elif method == 'linear':
+            # 方法2：线性插值
+            # 使用numpy的线性插值
+            gdp_values = gdp_data['GDP_Ontario'].values
+            gdp_dates = gdp_data.index.astype(np.int64) // 10**9  # 转换为秒
+            monthly_dates = monthly_index.astype(np.int64) // 10**9
+            
+            # 使用numpy插值
+            interpolated_values = np.interp(monthly_dates, gdp_dates, gdp_values)
+            gdp_monthly = pd.DataFrame({'GDP_Ontario': interpolated_values}, index=monthly_index)
+            print("使用线性插值方法")
+            
+        elif method == 'cubic':
+            # 方法3：三次样条插值
+            from scipy import interpolate
+            
+            gdp_values = gdp_data['GDP_Ontario'].values
+            gdp_dates = gdp_data.index.astype(np.int64) // 10**9  # 转换为秒
+            monthly_dates = monthly_index.astype(np.int64) // 10**9
+            
+            # 使用scipy三次样条插值
+            f = interpolate.interp1d(gdp_dates, gdp_values, kind='cubic', 
+                                   bounds_error=False, fill_value='extrapolate')
+            interpolated_values = f(monthly_dates)
+            gdp_monthly = pd.DataFrame({'GDP_Ontario': interpolated_values}, index=monthly_index)
+            print("使用三次样条插值方法")
+            
+        elif method == 'constant':
+            # 方法4：常数填充（年度值保持不变）
+            gdp_monthly = gdp_data.reindex(monthly_index, method='ffill')
+            print("使用常数填充方法")
+            
+        else:
+            raise ValueError(f"未知的插值方法: {method}")
+        
+        # 计算GDP增长率（年同比）
         gdp_monthly['GDP_Growth_YoY'] = gdp_monthly['GDP_Ontario'].pct_change(12) * 100
         
-        return gdp_monthly.loc[self.start_date:self.end_date]
+        print("处理后的月度GDP数据（前10行）:")
+        print(gdp_monthly.head(10))
+        print("处理后的月度GDP数据（后10行）:")
+        print(gdp_monthly.tail(10))
+        
+        return gdp_monthly
     
     def load_interest_rates(self):
         """加载利率数据"""
