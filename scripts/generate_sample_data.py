@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 import os
 
 # Get the current date to append to the file name
-current_date = datetime.now().strftime("%Y-%m-%d")
+current_date = datetime.now().strftime("%Y%m%d")
 
 # 获取当前脚本的目录
 current_dir = os.path.dirname(os.path.abspath(__file__))

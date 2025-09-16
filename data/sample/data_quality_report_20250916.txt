@@ -1,0 +1,60 @@
+============================================================
+MACRO DATA QUALITY REPORT
+============================================================
+
+Generated on: 2025-09-16 06:34:03
+
+Dataset Overview:
+- Total records: 120
+- Total variables: 24
+- Date range: 2020-01-01 00:00:00 to 2024-12-31 00:00:00
+
+Missing Data Summary:
+- Inflation_YoY: 24 missing values (20.00%)
+- Unemployment_Rate: 8 missing values (6.67%)
+- Employment_Rate: 8 missing values (6.67%)
+- GDP_Ontario: 1 missing values (0.83%)
+- GDP_Growth_YoY: 25 missing values (20.83%)
+- Policy_Rate: 1 missing values (0.83%)
+- Prime_Rate: 1 missing values (0.83%)
+- Mortgage_5Y_Rate: 1 missing values (0.83%)
+- Prime_Policy_Spread: 1 missing values (0.83%)
+- Mortgage_Prime_Spread: 1 missing values (0.83%)
+- USD_CAD: 1 missing values (0.83%)
+- FX_Change_MoM: 3 missing values (2.50%)
+- FX_Change_YoY: 25 missing values (20.83%)
+- Economic_Cycle_Score: 25 missing values (20.83%)
+- Credit_Conditions: 1 missing values (0.83%)
+- Housing_Risk_Score: 8 missing values (6.67%)
+
+Key Statistics:
+
+Unemployment_Rate:
+  Mean: 6.74
+  Std: 1.94
+  Min: 4.80
+  Max: 14.20
+
+Inflation_YoY:
+  Mean: 4.12
+  Std: 1.88
+  Min: 1.02
+  Max: 8.13
+
+GDP_Growth_YoY:
+  Mean: 3.34
+  Std: 1.95
+  Min: 1.24
+  Max: 6.15
+
+Policy_Rate:
+  Mean: 2.40
+  Std: 2.06
+  Min: 0.25
+  Max: 5.00
+
+HPI_Change_YoY:
+  Mean: 6.69
+  Std: 12.39
+  Min: -15.74
+  Max: 29.97

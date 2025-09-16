@@ -1,4 +1,4 @@
-canadian-credit-risk-model/
+YumECL-SAS/
 │
 ├── README.md
 ├── LICENSE
@@ -9,9 +9,9 @@ canadian-credit-risk-model/
 │   └── data_dictionary.xlsx         # 数据字典
 │
 ├── /sql/
-│   ├── 01_create_schema.sql         # 所有DDL合并
-│   ├── 02_feature_engineering.sql   # 特征工程
-│   └── 03_reporting_queries.sql     # 报告查询
+│   ├── 01_create_schema.sql         # 所有DDL（数据定义语言）合并，包括创建基础表、视图、索引等
+│   ├── 02_feature_engineering.sql   #数据加载，数据清洗，特征工程
+│   └── 03_reporting_queries.sql     # 报告查询（ECL汇总报告、组合指标）
 │
 ├── /sas/
 │   ├── 00_setup.sas                 # 环境设置和宏定义
@@ -25,14 +25,18 @@ canadian-credit-risk-model/
 │
 ├── /data/
 │   ├── /sample/                    # 样本数据（Git管理）
-│   │   ├── loans_{current_date}.csv    # 贷款记录数据
-│   │   ├── payment_history_{current_date}.csv    # 支付历史数据
-│   │   └── macro_data_consolidated.csv     # 加拿大宏观数据
+│   │   ├── loans_{current_date}.csv    # 贷款记录数据（必需）
+│   │   ├── payment_history_{current_date}.csv    # 支付历史数据（必需）
+│   │   ├── macro_data_{current_date}.csv     # 加拿大宏观数据（必需）
+│   │   ├── stress_test_scenarios_{current_date}.csv    # 压力测试场景（必需）
+│   │   ├── macro_data_dictionary_{current_date}.csv    # 宏观数据字典（次要）
+│   │   └── data_quality_report_{current_date}.csv     # 宏观数据质量报告（次要）
 │   └── /output/                    # 输出结果（Git忽略）
 │       └── .gitkeep
 │
 ├── /scripts/
 │   ├── generate_sample_data.py     # 生成模拟数据
+│   ├── macro_data_consolidation.py     # 整合宏观数据
 │   └── run_pipeline.sh            # 执行脚本
 │
 └── config.yaml                     # 项目配置

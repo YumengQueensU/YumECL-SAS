@@ -13,7 +13,7 @@ import os
 from datetime import datetime, timedelta
 
 # Get the current date to append to the file name
-current_date = datetime.now().strftime("%Y-%m-%d")
+current_date = datetime.now().strftime("%Y%m%d")
 
 class MacroDataProcessor:
     """宏观经济数据处理器"""
