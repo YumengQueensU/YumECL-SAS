@@ -21,7 +21,7 @@
 
 /* Set run parameters */
 %let run_date = %sysfunc(today(), yymmddn8.);
-%let snapshot_date = 20250916;  /* Portfolio snapshot date */
+%let snapshot_date = 20241231;  /* Portfolio snapshot date */
 %let train_end_date = '31DEC2023'd;
 %let valid_end_date = '30JUN2024'd;
 
@@ -47,22 +47,89 @@ proc import datafile="&raw_path/payment_history_&snapshot_date..csv"
     datarow=2;
 run;
 
+/* Add calculated actual_amount since it's not in the raw data */
+data rawdata.payment_history;
+    set rawdata.payment_history;
+    /* Assume actual payment = scheduled unless past due */
+    if days_past_due = 0 then actual_amount = scheduled_amount;
+    else if days_past_due <= 30 then actual_amount = scheduled_amount * 0.5;
+    else if days_past_due <= 60 then actual_amount = scheduled_amount * 0.2;
+    else actual_amount = 0;
+run;
+
 /* Import macro data */
 proc import datafile="&raw_path/macro_data_&snapshot_date..csv"
-    out=rawdata.macro_data
+    out=rawdata.macro_data_raw
     dbms=csv
     replace;
     getnames=yes;
     datarow=2;
 run;
 
+/* Standardize macro data field names */
+data rawdata.macro_data;
+    set rawdata.macro_data_raw;
+    
+    /* Rename fields to match our convention */
+    rename 
+        Unemployment_Rate = unemployment_rate
+        Employment_Rate = employment_rate
+        GDP_Ontario = gdp_ontario
+        GDP_Growth_YoY = gdp_growth
+        Policy_Rate = policy_rate
+        Prime_Rate = prime_rate
+        Mortgage_5Y_Rate = mortgage_rate
+        USD_CAD = fx_rate
+        HPI = house_price_index
+        HPI_Change_YoY = hpi_change_yoy
+        WTI_Price = oil_price_wti
+        WCS_Price = oil_price_wcs
+        Economic_Cycle_Score = economic_cycle_score
+        Credit_Conditions = credit_conditions
+        Housing_Risk_Score = housing_risk_score;
+    
+    /* Create forecast_date from index */
+    if _N_ = 1 then forecast_date = input(VAR1, yymmdd10.);
+    else forecast_date = intnx('month', input(VAR1, yymmdd10.), 0);
+    format forecast_date date9.;
+    
+    /* Add scenario_type - all historical data is baseline */
+    scenario_type = 'baseline';
+    
+    drop VAR1;
+run;
+
 /* Import stress test scenarios */
 proc import datafile="&raw_path/stress_test_scenarios.csv"
-    out=rawdata.stress_scenarios
+    out=rawdata.stress_scenarios_raw
     dbms=csv
     replace;
     getnames=yes;
     datarow=2;
+run;
+
+/* Transform stress scenarios to long format */
+data rawdata.stress_scenarios;
+    set rawdata.stress_scenarios_raw;
+    
+    /* Standardize scenario names */
+    length scenario_type $20;
+    if _N_ = 1 then scenario_type = 'baseline';
+    else if _N_ = 2 then scenario_type = 'adverse';
+    else if _N_ = 3 then scenario_type = 'severely_adverse';
+    
+    /* Rename fields to match our convention */
+    rename 
+        Unemployment_Rate = unemployment_rate
+        GDP_Growth_YoY = gdp_growth_stress
+        Policy_Rate = policy_rate_stress
+        HPI_Change_YoY = hpi_change_stress
+        WTI_Price = oil_price_stress;
+    
+    /* Create scenario weights */
+    if scenario_type = 'baseline' then scenario_weight = 0.60;
+    else if scenario_type = 'adverse' then scenario_weight = 0.30;
+    else scenario_weight = 0.10;
 run;
 
 /* =========================================================================
@@ -107,12 +174,12 @@ data work.loans_clean;
     format orig_date date9.;
     
     /* Standardize product types */
-    product_type_std = upcase(compress(product_type));
-    select(product_type_std);
+    product_type_std = propcase(compress(product_type));
+    select(upcase(product_type_std));
         when('MORTGAGE','MORT','MTG') product_type_std = 'MORTGAGE';
-        when('CREDITCARD','CC','CARD') product_type_std = 'CREDIT_CARD';
-        when('AUTO','CAR','VEHICLE') product_type_std = 'AUTO_LOAN';
-        when('PERSONAL','PERS','PL') product_type_std = 'PERSONAL_LOAN';
+        when('CREDITCARD','CREDIT CARD','CC','CARD') product_type_std = 'CREDIT_CARD';
+        when('AUTO','AUTOLOAN','AUTO LOAN','CAR','VEHICLE') product_type_std = 'AUTO_LOAN';
+        when('PERSONAL','PERSONALLOAN','PERSONAL LOAN','PERS','PL') product_type_std = 'PERSONAL_LOAN';
         when('HELOC','LOC','LINEOFCREDIT') product_type_std = 'HELOC';
         otherwise product_type_std = 'OTHER';
     end;
@@ -190,9 +257,16 @@ proc sql;
         sum(case when days_past_due > 60 then 1 else 0 end) as count_dpd_60plus,
         sum(case when days_past_due > 90 then 1 else 0 end) as count_dpd_90plus,
         
-        /* Payment amounts */
-        avg(actual_amount / nullif(scheduled_amount,0)) as avg_payment_ratio,
-        min(actual_amount / nullif(scheduled_amount,0)) as min_payment_ratio,
+        /* Payment performance (based on DPD patterns) */
+        case 
+            when max(days_past_due) = 0 then 1.0  /* Perfect payment */
+            when max(days_past_due) <= 30 then 0.8 /* Minor delinquency */
+            when max(days_past_due) <= 60 then 0.5 /* Moderate delinquency */
+            else 0.2 /* Severe delinquency */
+        end as payment_performance_ratio,
+        
+        /* Count of payments made */
+        count(*) as total_payments,
         
         /* Recent behavior (last 12 months) */
         max(case when payment_date >= intnx('month', "&snapshot_date"d, -12) 
@@ -230,12 +304,16 @@ data work.model_dataset;
     /* Handle missing payment features (new loans) */
     array pay_vars{*} current_dpd max_dpd_ever avg_dpd std_dpd 
                       count_dpd_positive count_dpd_30plus count_dpd_60plus count_dpd_90plus
-                      avg_payment_ratio min_payment_ratio
+                      payment_performance_ratio total_payments
                       max_dpd_12m avg_dpd_12m max_dpd_6m avg_dpd_6m max_dpd_3m avg_dpd_3m;
     
     do i = 1 to dim(pay_vars);
         if missing(pay_vars{i}) then pay_vars{i} = 0;
     end;
+    
+    /* Set default payment performance for new loans */
+    if missing(payment_performance_ratio) or total_payments = 0 then 
+        payment_performance_ratio = 1.0;
     
     /* Create interaction features */
     credit_income_ratio = credit_score / (annual_income / 1000);
@@ -304,7 +382,8 @@ data work.model_dataset_staged;
             else flag_high_risk_mortgage = 0;
         end;
         when('CREDIT_CARD') do;
-            if avg_payment_ratio < 0.1 then flag_min_payer = 1;
+            /* Use payment performance ratio instead of avg_payment_ratio */
+            if payment_performance_ratio < 0.5 then flag_min_payer = 1;
             else flag_min_payer = 0;
         end;
         when('AUTO_LOAN') do;
@@ -488,7 +567,8 @@ default_flag|NUM|Historical default indicator|loans
 current_dpd|NUM|Current days past due|payment_history
 max_dpd_ever|NUM|Maximum DPD ever observed|payment_history
 max_dpd_12m|NUM|Maximum DPD in last 12 months|payment_history
-avg_payment_ratio|NUM|Average payment to scheduled ratio|payment_history
+payment_performance_ratio|NUM|Payment performance indicator|payment_history
+total_payments|NUM|Count of payments made|payment_history
 stage_ifrs9|NUM|IFRS 9 stage (1/2/3)|derived
 risk_segment|CHAR|Risk segmentation|derived
 target_default_12m|NUM|12-month default target|derived

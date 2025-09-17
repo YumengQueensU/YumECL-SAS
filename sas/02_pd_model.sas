@@ -37,7 +37,7 @@ run;
 /* Define candidate variables */
 %let numeric_vars = credit_score loan_to_value interest_rate payment_burden
                     current_dpd max_dpd_12m max_dpd_6m max_dpd_3m
-                    avg_payment_ratio months_on_book
+                    payment_performance_ratio months_on_book
                     credit_income_ratio ltv_credit_interaction
                     credit_score_sq ltv_sq income_log;
 
@@ -396,6 +396,10 @@ run;
 data work.macro_scenarios;
     set rawdata.macro_data;
     where scenario_type in ('baseline','adverse','severely_adverse');
+    
+    /* Use actual field names from the data */
+    keep forecast_date scenario_type 
+         unemployment_rate gdp_growth policy_rate house_price_index;
 run;
 
 /* Create macro adjustment factors */
@@ -429,8 +433,8 @@ proc sql;
         
         /* Interest rate impact */
         case
-            when interest_rate_3m > 5 then 1.15
-            when interest_rate_3m > 3 then 1.0
+            when policy_rate > 5 then 1.15
+            when policy_rate > 3 then 1.0
             else 0.95
         end as interest_adjustment
         

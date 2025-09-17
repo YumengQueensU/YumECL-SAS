@@ -325,10 +325,10 @@ data work.lgd_macro_factors;
     
     /* LGD multipliers based on economic conditions */
     
-    /* Housing market impact on secured LGD */
-    if house_price_index < -10 then lgd_housing_mult = 1.3;
-    else if house_price_index < 0 then lgd_housing_mult = 1.15;
-    else if house_price_index > 10 then lgd_housing_mult = 0.90;
+    /* Housing market impact on secured LGD - use HPI_Change_YoY */
+    if hpi_change_yoy < -10 then lgd_housing_mult = 1.3;
+    else if hpi_change_yoy < 0 then lgd_housing_mult = 1.15;
+    else if hpi_change_yoy > 10 then lgd_housing_mult = 0.90;
     else lgd_housing_mult = 1.0;
     
     /* Unemployment impact on unsecured LGD */
@@ -338,8 +338,8 @@ data work.lgd_macro_factors;
     else lgd_unemploy_mult = 1.0;
     
     /* Interest rate impact on all LGD */
-    if interest_rate_3m > 5 then lgd_rate_mult = 1.1;
-    else if interest_rate_3m < 2 then lgd_rate_mult = 0.95;
+    if policy_rate > 5 then lgd_rate_mult = 1.1;
+    else if policy_rate < 2 then lgd_rate_mult = 0.95;
     else lgd_rate_mult = 1.0;
     
     /* Combined scenario multiplier */
